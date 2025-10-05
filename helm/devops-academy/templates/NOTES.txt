@@ -1,0 +1,36 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your DevOps Academy Authentication Platform has been deployed.
+
+1. Get the application URL:
+{{- if .Values.ingress.enabled }}
+  https://{{ (index .Values.ingress.hosts 0).host }}
+{{- else if eq .Values.frontend.service.type "LoadBalancer" }}
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  Watch the status with: kubectl get svc {{ .Values.frontend.name }} -w
+
+  export SERVICE_IP=$(kubectl get svc {{ .Values.frontend.name }} -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+  echo http://$SERVICE_IP
+{{- else }}
+  export POD_NAME=$(kubectl get pods -l "app={{ .Values.frontend.name }}" -o jsonpath="{.items[0].metadata.name}")
+  kubectl port-forward $POD_NAME 8080:80
+  echo "Visit http://127.0.0.1:8080"
+{{- end }}
+
+2. Database information:
+   - PostgreSQL is deployed as: {{ .Release.Name }}-postgresql
+   - Database: {{ .Values.postgresql.auth.database }}
+   - Username: {{ .Values.postgresql.auth.username }}
+
+3. Check pod status:
+   kubectl get pods -l "app in ({{ .Values.backend.name }},{{ .Values.frontend.name }})"
+
+4. View logs:
+   Backend:  kubectl logs -l app={{ .Values.backend.name }} -f
+   Frontend: kubectl logs -l app={{ .Values.frontend.name }} -f
+
+5. Scale deployments:
+   kubectl scale deployment {{ .Values.backend.name }} --replicas=3
+   kubectl scale deployment {{ .Values.frontend.name }} --replicas=3
+
+Enjoy your DevOps Academy platform!

@@ -1,0 +1,19 @@
+apiVersion: v2
+name: devops-academy
+description: DevOps Academy User Authentication Platform
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - devops
+  - authentication
+  - nodejs
+  - react
+  - postgresql
+maintainers:
+  - name: DevOps Academy Team
+dependencies:
+  - name: postgresql
+    version: 12.x.x
+    repository: https://charts.bitnami.com/bitnami
+    condition: postgresql.enabled

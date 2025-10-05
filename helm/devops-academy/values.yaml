@@ -1,0 +1,130 @@
+# Default values for devops-academy
+replicaCount: 2
+
+# Backend configuration
+backend:
+  name: backend
+  image:
+    repository: ivykiera/devops-academy-storage-backend
+    tag: v1
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  env:
+    PORT: "3000"
+    JWT_SECRET: "demosecret"
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+
+# Frontend configuration
+frontend:
+  name: frontend
+  image:
+    repository: ivykiera/devops-academy-storage-frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 80
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+  autoscaling:
+    enabled: true
+    minReplicas: 2
+    maxReplicas: 10
+    targetCPUUtilizationPercentage: 80
+
+# Global settings for dependent charts
+global:
+  # Use AWS Public ECR mirror for Bitnami images to avoid Docker Hub rate limits
+  imageRegistry: public.ecr.aws
+
+# PostgreSQL configuration (using Bitnami Helm chart)
+postgresql:
+  enabled: true
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/postgresql
+    tag: "15"
+    pullPolicy: IfNotPresent
+  auth:
+    username: admin
+    password: demopassword
+    database: stateful_app
+  primary:
+    persistence:
+      enabled: true
+      size: 10Gi
+      storageClass: gp3
+    resources:
+      requests:
+        cpu: 250m
+        memory: 256Mi
+      limits:
+        cpu: 1000m
+        memory: 1Gi
+  metrics:
+    enabled: true
+    image:
+      registry: public.ecr.aws
+      repository: bitnami/postgres-exporter
+      # Use the default tag from chart if unspecified; set explicitly to pin
+      tag: "0.14.0"
+      pullPolicy: IfNotPresent
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: "nginx"
+  annotations:
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+  hosts:
+    - host: eks.globalheartassociation.com
+      paths:
+        - path: /
+          pathType: Prefix
+          backend: frontend
+        - path: /api
+          pathType: Prefix
+          backend: backend
+  tls:
+    - secretName: devops-academy-tls
+      hosts:
+        - eks.globalheartassociation.com
+
+# Service Account
+serviceAccount:
+  create: true
+  annotations: {}
+  name: "devops-academy-sa"
+
+# Pod Security
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001
+
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: false
