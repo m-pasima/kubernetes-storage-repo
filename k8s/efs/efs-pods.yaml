@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: efs-writers
+  namespace: default
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: efs-writers
+  template:
+    metadata:
+      labels:
+        app: efs-writers
+    spec:
+      containers:
+        - name: writer
+          image: public.ecr.aws/docker/library/alpine:3
+          command: ["/bin/sh","-c"]
+          args:
+            - |
+              while true; do
+                echo "$(hostname) $(date -Iseconds)" >> /share/hosts.txt;
+                sleep 5;
+              done
+          volumeMounts:
+            - name: share
+              mountPath: /share
+      volumes:
+        - name: share
+          persistentVolumeClaim:
+            claimName: efs-shared-pvc
+
